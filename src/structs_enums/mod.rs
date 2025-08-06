@@ -1,6 +1,8 @@
 // 構造体と列挙型の学習
 // Rustのカスタムデータ型について学びます
 
+use std::iter::Zip;
+
 // 1. 構造体の定義と使用
 #[derive(Debug)]  // Debug出力を可能にする
 struct User {
@@ -11,8 +13,37 @@ struct User {
 }
 
 // タプル構造体
+#[derive(Debug, Copy, Clone)]
 struct Color(i32, i32, i32);
+#[derive(Debug, Copy, Clone)]
 struct Point(i32, i32, i32);
+
+// タプル構造体のメソッドを追加
+impl Color {
+    fn to_hex(&self) -> String {
+        format!("#{:02x}{:02x}{:02x}", self.0, self.1, self.2)
+    }
+    
+    fn is_grayscale(&self) -> bool {
+        self.0 == self.1 && self.1 == self.2
+    }
+    
+    fn brightness(&self) -> f64 {
+        (self.0 as f64 * 0.299 + self.1 as f64 * 0.587 + self.2 as f64 * 0.114) / 255.0
+    }
+}
+
+impl Point {
+    fn origin() -> Self {
+        Point(0, 0, 0)
+    }
+    
+    fn translate(&mut self, dx: i32, dy: i32, dz: i32) {
+        self.0 += dx;
+        self.1 += dy;
+        self.2 += dz;
+    }
+}
 
 // ユニット様構造体（フィールドなし）
 struct AlwaysEqual;
@@ -39,20 +70,65 @@ pub fn structs_basics() {
     user2.email = String::from("anotheremail@example.com");
     
     // 構造体更新記法
-    let _user3 = User {
+    let user3 = User {
         email: String::from("another@example.com"),
         ..user1  // 残りのフィールドはuser1から取得
     };
-    
-    // タプル構造体
-    let black = Color(0, 0, 0);
-    let _origin = Point(0, 0, 0);
-    
-    println!("黒色: ({}, {}, {})", black.0, black.1, black.2);
-    
+
     // Debug表示
     println!("{:?}", user2);  // 1行で表示
     println!("{:#?}", user2); // 見やすく整形して表示
+    println!("{:?}", user3);  // user3もDebug表示可能
+    
+    // タプル構造体
+    let black = Color(0, 0, 0);
+    let white = Color(255, 255, 255);
+    let red = Color(255, 0, 0);
+    let origin = Point(0, 0, 0);
+    let center = Point(50, 50, 50);
+    
+    println!("黒色: ({}, {}, {})", black.0, black.1, black.2);
+    println!("白色: ({}, {}, {})", white.0, white.1, white.2);
+    println!("赤色: ({}, {}, {})", red.0, red.1, red.2);
+    
+    // タプル構造体の操作
+    let Color(r, g, b) = red;  // 分解
+    println!("赤色の成分 - R: {}, G: {}, B: {}", r, g, b);
+    
+    // 関数に渡す
+    fn mix_colors(c1: Color, c2: Color) -> Color {
+        Color(
+            (c1.0 + c2.0) / 2,
+            (c1.1 + c2.1) / 2,
+            (c1.2 + c2.2) / 2,
+        )
+    }
+    
+    let gray = mix_colors(black, white);
+    println!("混合色（グレー）: ({}, {}, {})", gray.0, gray.1, gray.2);
+    
+    // 3D空間での距離計算
+    fn distance(p1: &Point, p2: &Point) -> f64 {
+        let dx = (p2.0 - p1.0) as f64;
+        let dy = (p2.1 - p1.1) as f64;
+        let dz = (p2.2 - p1.2) as f64;
+        (dx * dx + dy * dy + dz * dz).sqrt()
+    }
+    
+    println!("原点から中心への距離: {:.2}", distance(&origin, &center));
+    
+    println!("\n--- タプル構造体のメソッド ---");
+    println!("黒のHEX: {}", black.to_hex());
+    println!("白のHEX: {}", white.to_hex());
+    println!("赤のHEX: {}", red.to_hex());
+    println!("グレーはグレースケール？ {}", gray.is_grayscale());
+    println!("白の明度: {:.2}", white.brightness());
+    println!("黒の明度: {:.2}", black.brightness());
+    
+    let mut movable_point = Point::origin();
+    movable_point.translate(10, 20, 30);
+    println!("移動後の点: ({}, {}, {})", movable_point.0, movable_point.1, movable_point.2);
+    
 }
 
 // ビルダー関数
@@ -99,6 +175,7 @@ impl Rectangle {
 
 // 複数のimplブロックも可能
 impl Rectangle {
+    // 周囲を計算するメソッドを追加
     fn perimeter(&self) -> u32 {
         2 * (self.width + self.height)
     }
@@ -212,8 +289,21 @@ pub fn option_example() {
     let _absent_number: Option<i32> = None;
     
     // Optionの使用
-    let _x: i8 = 5;
+    let x: i8 = 5;
     let y: Option<i8> = Some(5);
+    let z: Option<i8> = None;
+
+    let sum = match y {
+        Some(val) => x + val,  // Optionから値を取り出す
+        None => x,             // Noneの場合はxをそのまま使う
+    };
+    println!("合計: {}", sum);
+
+    let noneSum = match z {
+        Some(val) => x + val,  // Optionから値を取り出す
+        None => x,             // Noneの場合はxをそのまま使う
+    };
+    println!("Noneの場合の合計: {}", noneSum);
     
     // let sum = x + y;  // エラー！Option<i8>とi8は足せない
     
